@@ -1,46 +1,57 @@
-<script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
-
-defineProps({
-    mustVerifyEmail: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
-});
-</script>
-
 <template>
-    <Head title="Profile" />
+    <app-layout>
+        <v-card class="mx-auto mt-6" max-width="800">
+            <v-card-title class="text-h5 font-weight-bold bg-green-600 text-white py-4 px-6">
+                Edit Profile
+            </v-card-title>
+            <v-card-text>
+                <v-form @submit.prevent="submit">
+                    <v-text-field
+                        v-model="form.name"
+                        :error-messages="form.errors.name"
+                        label="Name"
+                        required
+                    ></v-text-field>
 
-    <AuthenticatedLayout>
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Profile</h2>
-        </template>
+                    <v-text-field
+                        v-model="form.email"
+                        :error-messages="form.errors.email"
+                        label="Email"
+                        required
+                        type="email"
+                    ></v-text-field>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <UpdateProfileInformationForm
-                        :must-verify-email="mustVerifyEmail"
-                        :status="status"
-                        class="max-w-xl"
-                    />
-                </div>
+                    <!-- Add more fields as needed -->
 
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <UpdatePasswordForm class="max-w-xl" />
-                </div>
-
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <DeleteUserForm class="max-w-xl" />
-                </div>
-            </div>
-        </div>
-    </AuthenticatedLayout>
+                    <v-btn
+                        :loading="form.processing"
+                        class="mt-4"
+                        color="green-darken-2"
+                        type="submit"
+                    >
+                        Update Profile
+                    </v-btn>
+                </v-form>
+            </v-card-text>
+        </v-card>
+    </app-layout>
 </template>
+
+<script setup>
+import {useForm} from '@inertiajs/vue3';
+import AppLayout from "@/Layouts/AppLayout.vue";
+
+const props = defineProps({
+    user: Object,
+});
+
+const form = useForm({
+    name: props.user.name,
+    email: props.user.email,
+    // Add more fields as needed
+});
+
+const submit = () => {
+    form.patch(route('profile.update'));
+};
+</script>

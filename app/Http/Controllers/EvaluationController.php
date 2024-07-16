@@ -71,25 +71,18 @@ class EvaluationController extends Controller
 
         if ($currentQuestionIndex >= count($questions)) {
             // Evaluation complete
-            $questionsWithAnswers = $evaluation->questions()->withPivot('selected_answer', 'correct_answer')->get();
+            $questionsWithAnswers = $evaluation->questions()->withPivot('selected_answer')->get();
 
-            $correctAnswers = $questionsWithAnswers->pluck('correct_answer')->toArray();
-            $selectedAnswers = $questionsWithAnswers->pluck('pivot.selected_answer')->toArray();
-
-            $allCorrect = array_map(
-                fn($correct, $selected) => $correct === $selected,
-                $correctAnswers,
-                $selectedAnswers
-            );
-
-            $allCorrect = array_reduce($allCorrect, fn($carry, $value) => $carry && $value, true);
+            $allCorrect = $questionsWithAnswers->every(function ($question) {
+                return $question->correct_answer === $question->pivot->selected_answer;
+            });
 
             if ($allCorrect) {
                 // User answered all questions correctly
                 $congratsMessage = "Congratulations, {$user->name}! You've answered all questions correctly.";
 
                 // Generate study plan with field information only
-                $studyPlan = $this->geminiService->generateStudyPlan($user, $evaluation->field);
+                $studyPlan = $this->geminiService->generateStudyPlan($user, null, $evaluation->field);
 
                 // Save study plan to evaluation
                 $evaluation->update([
@@ -105,15 +98,21 @@ class EvaluationController extends Controller
                 return $question->pivot->selected_answer !== $question->correct_answer;
             });
 
+            $selectedAnswers = $questionsWithAnswers->pluck('pivot.selected_answer')->toArray();
+
             $report = $this->geminiService->generateReport($user, $incorrectQuestions->toArray(), $selectedAnswers,
                 $evaluation->field);
-            $studyPlan = $this->geminiService->generateStudyPlan($user, $report, $evaluation->field);
 
+            $studyPlan = $this->geminiService->generateStudyPlan($user, $report, $evaluation->field);
+            $flashcardsText = $this->geminiService->generateFlashcards($user, $report, $evaluation->field);
             // Save report and study plan to evaluation
             $evaluation->update([
                 'report' => $report,
                 'study_plan' => $studyPlan,
             ]);
+
+            // Parse flashcards text and save to database
+            $this->saveFlashcards($evaluation, $flashcardsText);
 
             return redirect()->route('report.show', $evaluationId);
         }
@@ -126,5 +125,14 @@ class EvaluationController extends Controller
         ]);
     }
 
-
+    private function saveFlashcards(Evaluation $evaluation, array $flashcardsData)
+    {
+        // Save flashcards to the database
+        foreach ($flashcardsData as $card) {
+            $evaluation->flashcards()->create([
+                'question' => $card['question'],
+                'answer' => $card['answer'],
+            ]);
+        }
+    }
 }

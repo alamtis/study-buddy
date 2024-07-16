@@ -20,6 +20,7 @@
                         <h2 class="text-xl font-semibold text-green-800 px-6 py-4">Study Plan</h2>
                         <div class="px-6 py-4 prose max-w-none" v-html="formattedStudyPlan"></div>
                     </div>
+                    <Flashcards :flashcards="evaluation.flashcards"/>
                 </div>
                 <div class="px-6 py-4 bg-gray-50 text-right">
                     <v-btn color="success" elevation="2" large @click="backToHome">
@@ -33,6 +34,7 @@
 <script setup>
 import {computed} from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Flashcards from '@/Components/Flashcards.vue';
 import {marked} from 'marked';
 
 const props = defineProps({

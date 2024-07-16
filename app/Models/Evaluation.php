@@ -20,6 +20,12 @@ class Evaluation extends Model
     public function questions()
     {
         return $this->belongsToMany(Question::class, 'user_answers')
-            ->withPivot('selected_answer');
+            ->withPivot('selected_answer')
+            ->withTimestamps();
+    }
+
+    public function flashcards()
+    {
+        return $this->hasMany(Flashcard::class);
     }
 }
